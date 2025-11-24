@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente de Escritura Avanzado</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-body: 'Lato', sans-serif; --font-heading: 'Lora', serif; --panel-bg: #FFFFFF;
+            --border-color: #DEE2E6; --shadow-color: rgba(0, 0, 0, 0.1); --text-primary: #212529;
+            --text-secondary: #495057; --accent-color: #2E5496; --accent-hover: #1e3a6e;
+            --success-color: #28a745; --danger-color: #DC3545;
+        }
+        * { box-sizing: border-box; }
+        @keyframes gradientAnimation { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        body { font-family: var(--font-body); margin: 0; padding: 1.5rem; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: var(--text-primary); background: linear-gradient(-45deg, #2c3e50, #004e63, #1f6a6e, #3498db); background-size: 400% 400%; animation: gradientAnimation 18s ease infinite; }
+        .app-layout { display: grid; grid-template-columns: 1fr; gap: 1.5rem; width: 100%; max-width: 1600px; height: auto; }
+        .panel { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 1rem; box-shadow: 0 8px 32px 0 var(--shadow-color); display: flex; flex-direction: column; overflow: hidden; min-height: 85vh; }
+        .form-panel, .tab-content { flex-grow: 1; overflow-y: auto; }
+        .form-panel { padding: 2.5rem; }
+        .header h1 { font-family: var(--font-heading); font-size: 1.8rem; font-weight: 600; }
+        .header p { font-size: 0.95rem; color: var(--text-secondary); margin: 0.5rem 0 2rem 0; }
+        .form-section { margin-bottom: 2rem; }
+        .form-section h3 { font-family: var(--font-heading); font-size: 1rem; font-weight: 600; color: var(--text-secondary); padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); margin: 0 0 1.5rem 0; }
+        .input-group { position: relative; margin-bottom: 1.25rem; }
+        .input-group input, .input-group textarea, .input-group select { width: 100%; padding: 1rem; border: 1px solid #ced4da; border-radius: 0.5rem; font-size: 0.95rem; background-color: #fff; color: var(--text-primary); }
+        .input-group textarea { min-height: 120px; line-height: 1.5; padding-top: 1rem; }
+        .input-group label { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); background-color: #fff; padding: 0 0.25rem; margin: 0; font-size: 0.95rem; font-weight: 400; transition: all 0.2s ease-out; pointer-events: none; }
+        .input-group input:focus, .input-group textarea:focus, .input-group select:focus { outline: none; border-color: var(--accent-color); }
+        .input-group input:focus+label, .input-group input:not(:placeholder-shown)+label, .input-group textarea:focus+label, .input-group textarea:not(:placeholder-shown)+label, .input-group select:focus+label, .input-group select:valid+label { top: 0; font-size: 0.75rem; color: var(--accent-color); font-weight: 700; }
+        .form-row { display: flex; gap: 1rem; }
+        .form-row .input-group { flex: 1; }
+        .checkbox-group { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; }
+        .checkbox-group label { margin: 0; font-weight: 400; color: var(--text-primary); cursor: pointer; }
+        .button { padding: 0.8rem 1.2rem; border: none; border-radius: 0.5rem; color: white; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; text-decoration: none; }
+        .button.primary { background: linear-gradient(45deg, var(--accent-color), var(--accent-hover)); }
+        .button.secondary { background-color: var(--text-secondary); }
+        .button.success { background-color: var(--success-color); }
+        .button.danger { background-color: var(--danger-color); }
+        .button:hover:not(:disabled) { box-shadow: 0 4px 15px rgba(0,0,0,0.2); transform: translateY(-2px); }
+        .button:disabled { background: #adb5bd; cursor: not-allowed; transform: none; box-shadow: none; }
+        .tabs { display: flex; padding: 0 2rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0; background-color: #f8f9fa; }
+        .tab { padding: 0.8rem 1.2rem; font-size: 0.95rem; font-weight: 700; color: var(--text-secondary); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+        .tab.active { color: var(--accent-color); border-bottom-color: var(--accent-color); }
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; }
+        .editor-container { padding: 2.5rem 3.5rem; font-family: var(--font-body); font-size: 11pt; line-height: 1.9; color: var(--text-primary); }
+        .editor-container:focus { outline: none; }
+        .editor-container:empty:before { content: "El contenido de tu libro aparecerá aquí..."; color: #adb5bd; font-style: italic; }
+        .editor-container h1, .editor-container h2, .editor-container h3, .editor-container h4 { font-family: var(--font-heading); margin: 2em 0 1em 0; font-weight: 600; color: var(--accent-color); }
+        .editor-container h1 { font-size: 2.5em; text-align: center; }
+        .editor-container h2 { font-size: 2em; border-bottom: 2px solid #E9ECEF; padding-bottom: 0.5rem; }
+        .editor-container h3 { font-size: 1.6em; }
+        .editor-container h4 { font-size: 1.3em; }
+        .editor-container p, .editor-container li { text-align: justify; color: var(--text-primary); }
+        .status-bar { border-top: 1px solid var(--border-color); padding: 0.8rem 2rem; font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; flex-shrink: 0; background-color: #f8f9fa; }
+        .spinner { width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-left-color: var(--accent-color); border-radius: 50%; display: inline-block; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .generation-controls { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1.5rem 2rem; align-items: center; border-bottom: 1px solid var(--border-color); flex-shrink: 0; background-color: #f8f9fa; }
+        .generation-controls select { flex-grow: 1; color: var(--text-primary); }
+        .generation-controls select option { background: #fff; color: var(--text-primary); }
+        @media (min-width: 1024px) { body { padding: 2rem; } .app-layout { grid-template-columns: 450px 1fr; height: 92vh; } }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <div class="panel form-panel">
+            <div class="header"><h1>Generador de Contenido</h1><p>Define la estructura y el tono de tu obra, y deja que la IA se encargue de la escritura inicial.</p></div>
+            <form id="book-form" onsubmit="event.preventDefault(); generarIndice();">
+                <div class="form-section">
+                    <h3>Información Esencial</h3>
+                    <div class="input-group"><input type="text" id="titulo" required placeholder=" "><label for="titulo">Título del Libro</label></div>
+                    <div class="input-group"><textarea id="argumento" rows="4" required placeholder=" "></textarea><label for="argumento">Argumento o Descripción Principal</label></div>
+                </div>
+                <div class="form-section">
+                    <h3>Estructura del Libro</h3>
+                    <div class="form-row">
+                        <div class="input-group"><select id="terminoCapitulo" required><option value="Capítulo">Capítulos</option><option value="Lección">Lecciones</option><option value="Módulo">Módulos</option><option value="Unidad">Unidades</option></select><label for="terminoCapitulo">Tipo de División</label></div>
+                        <div class="input-group"><input type="number" id="numCapitulos" value="4" min="1" max="50" required placeholder=" "><label for="numCapitulos">Nº de Divisiones</label></div>
+                    </div>
+                    <div class="input-group"><input type="text" class="range-input" id="rangoSecciones" value="3-5" required placeholder=" "><label for="rangoSecciones">Secciones por División (ej. 3 o 2-4)</label></div>
+                </div>
+                <div class="form-section">
+                    <h3>Tono y Detalle</h3>
+                    <div class="input-group">
+                        <select id="tono" required>
+                            <option value="" disabled selected hidden></option>
+                            <optgroup label="Tonos Creativos y Generales">
+                                <option value="Narrativo y Creativo">Narrativo y Creativo</option>
+                                <option value="Humorístico e Irónico">Humorístico e Irónico</option>
+                                <option value="Inspirador y Motivacional">Inspirador y Motivacional</option>
+                            </optgroup>
+                            <optgroup label="Tonos por Audiencia">
+                                <option value="Infantil y Sencillo">Infantil y Sencillo</option>
+                                <option value="Juvenil y Dinámico">Juvenil y Dinámico</option>
+                            </optgroup>
+                            <optgroup label="Tonos Divulgativos y Educativos">
+                                <option value="Divulgativo y Accesible">Divulgativo y Accesible</option>
+                                <option value="Técnico y Preciso (Nivel Bachillerato)">Técnico y Preciso (Nivel Bachillerato)</option>
+                            </optgroup>
+                             <optgroup label="Tonos Profesionales y Corporativos">
+                                <option value="Profesional y Corporativo (General)">Profesional y Corporativo (General)</option>
+                                <option value="Ejecutivo y Estratégico (Para líderes)">Ejecutivo y Estratégico (Para líderes)</option>
+                                <option value="Técnico-Especializado (Manuales, guías)">Técnico-Especializado (Manuales, guías)</option>
+                                <option value="Legal y Normativo">Legal y Normativo</option>
+                            </optgroup>
+                            <optgroup label="Tonos Académicos y de Investigación">
+                                <option value="Contenido para Diplomado (Práctico y teórico)">Contenido para Diplomado</option>
+                                <option value="Académico (Nivel Licenciatura/Grado)">Académico (Nivel Licenciatura)</option>
+                                <option value="Académico (Nivel Maestría/Posgrado)">Académico (Nivel Posgrado)</option>
+                                <option value="Académico (Nivel Doctorado/Investigación)">Académico (Nivel Doctorado)</option>
+                                <option value="Científico (Estilo Paper/Artículo)">Científico (Estilo Paper/Artículo)</option>
+                            </optgroup>
+                        </select>
+                        <label for="tono">Tono de Escritura</label>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group"><input type="text" class="range-input" id="rangoSubSubsecciones" value="2-4" required placeholder=" "><label for="rangoSubSubsecciones">Sub-Subsecciones (ej. 2-4)</label></div>
+                        <div class="input-group"><input type="text" id="extensionSeccion" value="1500-2000" required placeholder=" "><label for="extensionSeccion">Extensión (Palabras)</label></div>
+                    </div>
+                     <div class="checkbox-group"><input type="checkbox" id="addRefs" style="width: 1.25em; height: 1.25em;"><label for="addRefs">Incluir Referencias (APA)</label></div>
+                </div>
+                <button type="submit" id="submit-btn" class="button primary" style="width: 100%;"><span>Generar Índice</span></button>
+            </form>
+        </div>
+        <div class="panel editor-panel">
+            <div class="tabs"><div class="tab active" data-tab="indice">Índice</div><div class="tab" data-tab="contenido">Contenido</div></div>
+            <div class="tab-content active" id="tab-indice"><div id="editor-indice" class="editor-container" contenteditable="true"></div></div>
+            <div class="tab-content" id="tab-contenido">
+                <div class="generation-controls">
+                    <select id="capitulo-selector" class="button" disabled></select>
+                    <button id="btn-generar-capitulo" class="button primary" disabled>Escribir División</button>
+                    <button id="btn-generar-todo" class="button secondary" disabled>Escribir Libro Completo</button>
+                    <button id="btn-exportar-docs" class="button success" disabled>Exportar a Google Docs</button>
+                    <button id="btn-detener" class="button danger" style="display: none;">Detener</button>
+                </div>
+                <div id="editor-contenido" class="editor-container" contenteditable="true"></div>
+            </div>
+            <div class="status-bar">Listo</div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx3OGdwBJPUIG72xh2rurPPLcmWkZwI8lV4hwOHfp1qlM0K2GxBkhKn1J4U9Vh_YZZ0/exec";
+        let indiceData = [], isGenerating = false;
+        
+        const form = document.getElementById("book-form"), submitBtn = document.getElementById("submit-btn"), statusBar = document.querySelector(".status-bar"), editorIndice = document.getElementById("editor-indice"), editorContenido = document.getElementById("editor-contenido"), capituloSelector = document.getElementById("capitulo-selector"), btnGenerarCapitulo = document.getElementById("btn-generar-capitulo"), btnGenerarTodo = document.getElementById("btn-generar-todo"), btnExportarDocs = document.getElementById("btn-exportar-docs"), btnDetener = document.getElementById("btn-detener"), terminoCapituloSelect = document.getElementById("terminoCapitulo");
+
+        terminoCapituloSelect.addEventListener("change", function() { btnGenerarCapitulo.textContent = `Escribir ${this.value}` });
+        document.addEventListener("DOMContentLoaded", () => {
+            btnGenerarCapitulo.textContent = `Escribir ${terminoCapituloSelect.value}`;
+            document.querySelectorAll('.range-input').forEach(input => { input.addEventListener('input', function(e) { this.value = this.value.replace(/[^0-9-]/g, ''); }); });
+        });
+        document.querySelector(".tabs").addEventListener("click", e => { if (e.target.classList.contains("tab")) { document.querySelectorAll(".tab").forEach(t => t.classList.remove("active")); document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active")); e.target.classList.add("active"); document.getElementById(`tab-${e.target.dataset.tab}`).classList.add("active"); } });
+        btnGenerarCapitulo.addEventListener("click", () => generarContenido(false));
+        btnGenerarTodo.addEventListener("click", () => generarContenido(true));
+        btnDetener.addEventListener("click", () => { isGenerating = false; });
+        btnExportarDocs.addEventListener("click", exportarADocs);
+
+        function obtenerNumeroAleatorioDeRango(rango) { const rangoStr = String(rango).trim(); if (rangoStr.includes("-")) { const [min, max] = rangoStr.split("-").map(Number); if (!isNaN(min) && !isNaN(max) && min <= max) { return Math.floor(Math.random() * (max - min + 1)) + min } } const numeroFijo = Number(rangoStr); return !isNaN(numeroFijo) ? numeroFijo : 3; }
+        async function callServer(action, data) { if (WEB_APP_URL.includes("...")) throw new Error("Configura la URL de tu Web App."); const response = await fetch(WEB_APP_URL, { method: "POST", mode: "cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action, data }) }); if (!response.ok) throw new Error(`Error de red: ${response.status}`); const result = await response.json(); if (result.status === "error") throw new Error(result.message); return result.data; }
+        
+        async function generarIndice() {
+            if (!form.checkValidity()) { return Swal.fire("Campos Incompletos", "Por favor, rellena todos los campos.", "warning"); }
+            setLoadingState(true, "Generando estructura...");
+            editorIndice.innerHTML = "";
+            try {
+                const numCapitulos = parseInt(document.getElementById("numCapitulos").value, 10);
+                let indiceHtmlCompleto = "";
+                for (let i = 1; i <= numCapitulos; i++) {
+                    setLoadingState(true, `Generando división ${i}/${numCapitulos}...`);
+                    const numSecciones = obtenerNumeroAleatorioDeRango(document.getElementById("rangoSecciones").value);
+                    const data = {
+                        titulo: document.getElementById("titulo").value, argumento: document.getElementById("argumento").value,
+                        numCapitulo: i, numSecciones: numSecciones,
+                        tono: document.getElementById("tono").value, terminoCapitulo: document.getElementById("terminoCapitulo").value
+                    };
+                    const capituloHtml = await callServer("generarCapituloIndice", data);
+                    indiceHtmlCompleto += capituloHtml;
+                    editorIndice.innerHTML = `<h1>${data.titulo}</h1>${indiceHtmlCompleto}`;
+                }
+                onIndiceSuccess(document.getElementById("titulo").value, indiceHtmlCompleto);
+            } catch (error) { onFailure(error); }
+        }
+
+        function onIndiceSuccess(titulo, indiceHTML) { editorIndice.innerHTML = `<h1>${titulo}</h1>${indiceHTML}`; indiceData = parsearIndice(editorIndice.innerHTML); actualizarSelectorCapitulos(); setLoadingState(false, "Índice generado."); Swal.fire("¡Éxito!", "El índice está listo. Ve a 'Contenido' para escribir.", "success"); }
+        
+        async function generarContenido(generarLibroCompleto) {
+            isGenerating = true;
+            setContenidoLoadingState(true, "Iniciando...");
+            const capitulosAGenerar = generarLibroCompleto ? indiceData : [indiceData[parseInt(capituloSelector.value)]];
+            const addRefs = document.getElementById("addRefs").checked;
+
+            const appendHtml = (html) => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                while (tempDiv.firstChild) { editorContenido.appendChild(tempDiv.firstChild); }
+                editorContenido.scrollTop = editorContenido.scrollHeight;
+            };
+            
+            if (generarLibroCompleto) {
+                editorContenido.innerHTML = ""; 
+                appendHtml(`<h1>${document.getElementById("titulo").value}</h1>`);
+                setLoadingState(true, "Escribiendo introducción del libro...");
+                try {
+                    const introHTML = await callServer("generarIntroLibro", { titulo: document.getElementById("titulo").value, argumento: document.getElementById("argumento").value });
+                    appendHtml(introHTML);
+                } catch (error) { return onFailure(error); }
+            } else if (!editorContenido.querySelector('h1')) {
+                editorContenido.innerHTML = `<h1>${document.getElementById("titulo").value}</h1>`;
+            }
+
+            for (const capitulo of capitulosAGenerar) {
+                if (!isGenerating) break;
+                const indiceCapituloGlobal = indiceData.findIndex(c => c.title === capitulo.title);
+                
+                appendHtml(`<h2 data-title="${capitulo.title}">${capitulo.title}</h2>`);
+                
+                setLoadingState(true, `Escribiendo intro para ${capitulo.title}...`);
+                try { 
+                    const introCapituloHTML = await callServer("generarIntroCapitulo", { tituloCapitulo: capitulo.title, listaSecciones: capitulo.sections });
+                    appendHtml(introCapituloHTML);
+                } catch (error) { return onFailure(error); }
+
+                for (let j = 0; j < capitulo.sections.length; j++) {
+                    if (!isGenerating) break;
+                    const seccion = capitulo.sections[j];
+                    const numeroSeccionCompleto = `${indiceCapituloGlobal + 1}.${j + 1}`;
+                    
+                    appendHtml(`<h3>${numeroSeccionCompleto} ${seccion}</h3>`);
+                    
+                    setLoadingState(true, `Escribiendo intro para sección ${j + 1}...`);
+                    try { 
+                        const introSeccionHTML = await callServer("generarIntroSeccion", { tituloSeccion: seccion, tituloCapitulo: capitulo.title });
+                        appendHtml(introSeccionHTML);
+                    } catch(error) { return onFailure(error); }
+                    
+                    setLoadingState(true, `Escribiendo contenido de la sección ${j + 1}/${capitulo.sections.length}...`);
+                    try {
+                        const numSubSubsecciones = obtenerNumeroAleatorioDeRango(document.getElementById("rangoSubSubsecciones").value);
+                        const data = {
+                            tituloSeccion: seccion, numSubSubsecciones: numSubSubsecciones,
+                            tono: document.getElementById("tono").value, extensionSeccion: document.getElementById("extensionSeccion").value,
+                            numeroSeccionCompleto: numeroSeccionCompleto
+                        };
+                        const contenidoSeccionHTML = await callServer("generarContenidoSeccion", data);
+                        appendHtml(contenidoSeccionHTML);
+                    } catch (error) { return onFailure(error); }
+                }
+
+                if (isGenerating) {
+                    setLoadingState(true, "Escribiendo conclusión...");
+                    try { 
+                        const conclusionHTML = await callServer("generarConclusionCapitulo", { tituloCapitulo: capitulo.title, listaSecciones: capitulo.sections });
+                        appendHtml(conclusionHTML);
+                    } catch (error) { onFailure(error); }
+                }
+
+                if (addRefs && isGenerating) {
+                    setLoadingState(true, "Generando referencias...");
+                    try { 
+                        const refsHTML = await callServer("generarReferenciasCapitulo", { tituloCapitulo: capitulo.title });
+                        appendHtml(refsHTML);
+                    } catch (error) { onFailure(error); }
+                }
+            }
+            setContenidoLoadingState(false, isGenerating ? "Escritura completada." : "Escritura detenida.");
+            isGenerating = false;
+        }
+
+        async function exportarADocs(){const a=document.getElementById("titulo").value,e=editorContenido.innerHTML;if(!a||!e.trim())return void Swal.fire("Faltan Datos","Asegúrate de tener contenido generado.","warning");const t=`<style>body{font-family:'Lato',sans-serif;font-size:11pt;color:#212529}p,li{line-height:1.5;text-align:justify;margin-bottom:.8em}h1,h2,h3,h4{font-family:'Lora',serif;font-weight:600;margin-top:2em;margin-bottom:1em;line-height:1.2;text-align:left;color:#2E5496}h1{font-size:24pt;text-align:center}h2{font-size:20pt;border-bottom:1px solid #DEE2E6;padding-bottom:4px}h3{font-size:16pt}h4{font-size:13pt}b{font-weight:700}</style>`,n=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${a}</title>${t}</head><body>${e}</body></html>`;setLoadingState(!0,"Exportando a Google Docs...",!0);try{const o=await callServer("exportarGoogleDocs",{titulo:a,contenidoHTML:n});Swal.fire({title:"¡Libro Exportado!",html:`Tu libro ha sido creado.<br><br><a href="${o}" target="_blank" class="button primary">Abrir Documento</a>`,icon:"success"})}catch(a){onFailure(a)}finally{setLoadingState(!1,"Exportación finalizada.",!0)}}
+        function parsearIndice(a){const e=document.createElement("div");return e.innerHTML=a,Array.from(e.querySelectorAll("h2")).map(t=>({title:t.textContent.trim(),sections:Array.from(t.nextElementSibling?.querySelectorAll("li")??[]).map(n=>n.textContent.trim())}))}function actualizarSelectorCapitulos(){capituloSelector.innerHTML="";const a=indiceData.length>0;if(a){const e=document.getElementById("terminoCapitulo").value;indiceData.forEach((t,n)=>{const o=t.title.replace(/^(Capítulo|Lección|Módulo|Unidad)\s*\d+:\s*/,""),c=new Option(`${e} ${n+1}: ${o}`,n);capituloSelector.add(c)})}capituloSelector.disabled=!a,btnGenerarCapitulo.disabled=!a,btnGenerarTodo.disabled=!a}function setLoadingState(a,e,t){t||(submitBtn.disabled=a,submitBtn.innerHTML=a?'<div class="spinner"></div><span>Generando...</span>':'<span>Generar Índice</span>'),statusBar.innerHTML=a?`<div class="spinner"></div> ${e}`:e}
+        function setContenidoLoadingState(a,e){const t=[btnGenerarCapitulo,btnGenerarTodo,capituloSelector,btnExportarDocs],n=[btnDetener];(a?t:n).forEach(o=>o.style.display="none"),(a?n:t).forEach(o=>o.style.display="inline-flex"),t.forEach(o=>o.disabled=a),a||(btnExportarDocs.disabled=0===editorContenido.innerHTML.trim().length),statusBar.innerHTML=a?`<div class="spinner"></div> ${e}`:e}
+        function onFailure(a){isGenerating=!1,console.error(a);const e=`Error: ${a.message}`;setLoadingState(!1,e,!1),setContenidoLoadingState(!1,e),Swal.fire({title:"Ocurrió un Error",text:a.message,icon:"error"})}
+    </script>
+</body>
+</html>
